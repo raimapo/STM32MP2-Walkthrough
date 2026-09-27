@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STM32MP257 — OpenSTLinux Build & Flash Guide</title>
+<style>
+  :root {
+    --blue-50: #E6F1FB;
+    --blue-100: #B5D4F4;
+    --blue-200: #85B7EB;
+    --blue-400: #378ADD;
+    --blue-600: #185FA5;
+    --blue-800: #0C447C;
+    --blue-900: #042C53;
+
+    --teal-50: #E1F5EE;
+    --teal-100: #9FE1CB;
+    --teal-400: #1D9E75;
+    --teal-600: #0F6E56;
+    --teal-800: #085041;
+
+    --amber-50: #FAEEDA;
+    --amber-100: #FAC775;
+    --amber-400: #BA7517;
+    --amber-600: #854F0B;
+    --amber-800: #633806;
+
+    --red-50: #FCEBEB;
+    --red-100: #F7C1C1;
+    --red-400: #E24B4A;
+    --red-600: #A32D2D;
+
+    --gray-50: #F1EFE8;
+    --gray-100: #D3D1C7;
+    --gray-200: #B4B2A9;
+    --gray-400: #888780;
+    --gray-600: #5F5E5A;
+    --gray-800: #444441;
+    --gray-900: #2C2C2A;
+
+    --bg: #ffffff;
+    --bg-secondary: #F8F7F4;
+    --bg-sidebar: #F1EFE8;
+    --text-primary: #1a1a18;
+    --text-secondary: #5F5E5A;
+    --text-muted: #888780;
+    --border: #D3D1C7;
+    --border-light: #E8E6DF;
+    --code-bg: #1e1e2e;
+    --code-text: #cdd6f4;
+    --code-prompt: #89b4fa;
+    --code-comment: #6c7086;
+    --code-keyword: #cba6f7;
+    --code-string: #a6e3a1;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --bg-secondary: #222220;
+      --bg-sidebar: #1e1e1c;
+      --text-primary: #E8E6DF;
+      --text-secondary: #B4B2A9;
+      --text-muted: #888780;
+      --border: #3a3a38;
+      --border-light: #2e2e2c;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── Layout ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 0 0 2rem;
+  }
+
+  .sidebar-brand {
+    padding: 1.5rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+  }
+
+  .sidebar-chip {
+    display: inline-block;
+    background: var(--blue-800);
+    color: var(--blue-100);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+
+  .sidebar-brand h1 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .sidebar-brand p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  .sidebar nav { padding: 0 0.75rem; }
+
+  .nav-group-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 1rem 0.5rem 0.4rem;
+  }
+
+  .sidebar nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: 1px;
+  }
+
+  .sidebar nav a:hover {
+    background: var(--border);
+    color: var(--text-primary);
+  }
+
+  .sidebar nav a.active {
+    background: var(--blue-50);
+    color: var(--blue-800);
+    font-weight: 500;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .sidebar nav a.active { background: rgba(55,138,221,0.15); color: var(--blue-200); }
+  }
+
+  .step-badge {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Main content ── */
+  .main {
+    padding: 3rem 3.5rem 4rem;
+    max-width: 860px;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blue-600);
+    margin-bottom: 0.75rem;
+  }
+
+  .hero h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    line-height: 1.7;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .meta-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+
+  /* ── Sections ── */
+  .section {
+    margin-bottom: 3.5rem;
+    scroll-margin-top: 2rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--blue-800);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .section h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 1.75rem 0 0.6rem;
+  }
+
+  .section p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.75;
+  }
+
+  .section p:last-child { margin-bottom: 0; }
+
+  /* ── Code blocks ── */
+  .code-block {
+    background: var(--code-bg);
+    border-radius: 8px;
+    margin: 1rem 0;
+    overflow: hidden;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .code-lang {
+    font-size: 11px;
+    font-weight: 500;
+    color: #6c7086;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .copy-btn {
+    font-size: 11px;
+    color: #6c7086;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .copy-btn:hover { color: #cdd6f4; border-color: rgba(255,255,255,0.25); }
+  .copy-btn.copied { color: var(--code-string); border-color: var(--code-string); }
+
+  .code-block pre {
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--code-text);
+  }
+
+  .code-block code { font-family: inherit; }
+
+  /* Syntax colours */
+  .kw { color: var(--code-keyword); }
+  .str { color: var(--code-string); }
+  .cmt { color: var(--code-comment); font-style: italic; }
+  .prompt { color: var(--code-prompt); user-select: none; }
+  .hl { background: rgba(137,180,250,0.1); display: block; margin: 0 -1.25rem; padding: 0 1.25rem; }
+
+  /* ── Inline code ── */
+  code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--gray-50);
+    color: var(--blue-800);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border-light);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    code { background: rgba(137,180,250,0.1); color: var(--blue-200); border-color: rgba(137,180,250,0.15); }
+  }
+
+  /* ── Callouts ── */
+  .callout {
+    display: flex;
+    gap: 12px;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin: 1.25rem 0;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .callout p { margin: 0; }
+
+  .callout.info {
+    background: var(--blue-50);
+    border-left: 3px solid var(--blue-400);
+    color: var(--blue-800);
+  }
+
+  .callout.warning {
+    background: var(--amber-50);
+    border-left: 3px solid var(--amber-400);
+    color: var(--amber-800);
+  }
+
+  .callout.danger {
+    background: var(--red-50);
+    border-left: 3px solid var(--red-400);
+    color: var(--red-600);
+  }
+
+  .callout.success {
+    background: var(--teal-50);
+    border-left: 3px solid var(--teal-400);
+    color: var(--teal-800);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .callout.info    { background: rgba(55,138,221,0.1);  color: var(--blue-100); }
+    .callout.warning { background: rgba(186,117,23,0.1);  color: var(--amber-100); }
+    .callout.danger  { background: rgba(226,75,74,0.1);   color: var(--red-100); }
+    .callout.success { background: rgba(29,158,117,0.1);  color: var(--teal-100); }
+  }
+
+  /* ── Step list ── */
+  .steps { list-style: none; margin: 0; padding: 0; }
+
+  .steps li {
+    display: flex;
+    gap: 14px;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-light);
+    position: relative;
+  }
+
+  .steps li:last-child { border-bottom: none; }
+
+  .step-n {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--blue-800);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .step-body strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+  }
+
+  .step-body p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── Package table ── */
+  .pkg-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 1rem 0;
+  }
+
+  .pkg-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pkg-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+  }
+
+  .pkg-table tr:last-child td { border-bottom: none; }
+
+  .pkg-table td:first-child {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--blue-700, #185FA5);
+    white-space: nowrap;
+  }
+
+  .pkg-table td:last-child { color: var(--text-secondary); }
+
+  /* ── Divider ── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border-light);
+    margin: 2.5rem 0;
+  }
+
+  /* ── Progress bar ── */
+  .progress-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 2rem 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .ps-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 80px;
+  }
+
+  .ps-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    position: relative;
+    z-index: 1;
+  }
+
+  .ps-dot.done {
+    background: var(--blue-800);
+    border-color: var(--blue-800);
+    color: #fff;
+  }
+
+  .ps-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.3;
+    max-width: 70px;
+  }
+
+  .ps-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    margin-bottom: 22px;
+    min-width: 24px;
+  }
+
+  .ps-line.done { background: var(--blue-800); }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 2rem 1.25rem 3rem; }
+    .hero h2 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-chip">STM32MP257</div>
+      <h1>OpenSTLinux<br>Build Guide</h1>
+      <p>Yocto Scarthgap · v26.02.18</p>
+    </div>
+    <nav>
+      <div class="nav-group-label">Overview</div>
+      <a href="#intro" class="active">
+        <span class="step-badge">⊞</span> Introduction
+      </a>
+      <a href="#prerequisites">
+        <span class="step-badge">✓</span> Prerequisites
+      </a>
+
+      <div class="nav-group-label">Build</div>
+      <a href="#dependencies">
+        <span class="step-badge">1</span> Install dependencies
+      </a>
+      <a href="#workspace">
+        <span class="step-badge">2</span> Create workspace
+      </a>
+      <a href="#sync">
+        <span class="step-badge">3</span> Repo init &amp; sync
+      </a>
+      <a href="#build">
+        <span class="step-badge">4</span> Configure &amp; build
+      </a>
+      <a href="#troubleshooting">
+        <span class="step-badge">!</span> Troubleshooting
+      </a>
+
+      <div class="nav-group-label">Flash</div>
+      <a href="#programmer">
+        <span class="step-badge">5</span> Install STM32CubeProgrammer
+      </a>
+      <a href="#udev">
+        <span class="step-badge">6</span> USB &amp; udev rules
+      </a>
+      <a href="#flash">
+        <span class="step-badge">7</span> Flash the board
+      </a>
+
+      <div class="nav-group-label">Customise</div>
+      <a href="#packages">
+        <span class="step-badge">+</span> Adding packages
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Hero -->
+    <div class="hero" id="intro">
+      <div class="hero-eyebrow">Developer Documentation</div>
+      <h2>Building OpenSTLinux for STM32MP257</h2>
+      <p>A complete guide to fetching, building, and flashing a Yocto-based Linux image on the STM32MP257F-EV1 evaluation board using the <strong>Scarthgap</strong> release.</p>
+      <div class="hero-meta">
+        <span class="meta-item"><span class="meta-dot" style="background:var(--blue-400)"></span>Ubuntu 22.04 LTS (recommended)</span>
+        <span class="meta-item"><span class="meta-dot" style="background:var(--teal-400)"></span>Yocto Scarthgap</span>
+        <span class="meta-item"><span class="meta-dot" style="background:var(--amber-400)"></span>Tag: openstlinux-6.6-yocto-scarthgap-mpu-v26.02.18</span>
+      </div>
+    </div>
+
+    <!-- Progress overview -->
+    <div class="progress-steps">
+      <div class="ps-item"><div class="ps-dot done">1</div><div class="ps-label">Install deps</div></div>
+      <div class="ps-line done"></div>
+      <div class="ps-item"><div class="ps-dot done">2</div><div class="ps-label">Init workspace</div></div>
+      <div class="ps-line done"></div>
+      <div class="ps-item"><div class="ps-dot done">3</div><div class="ps-label">Repo sync</div></div>
+      <div class="ps-line done"></div>
+      <div class="ps-item"><div class="ps-dot done">4</div><div class="ps-label">Bitbake build</div></div>
+      <div class="ps-line"></div>
+      <div class="ps-item"><div class="ps-dot">5</div><div class="ps-label">Install programmer</div></div>
+      <div class="ps-line"></div>
+      <div class="ps-item"><div class="ps-dot">6</div><div class="ps-label">Setup USB</div></div>
+      <div class="ps-line"></div>
+      <div class="ps-item"><div class="ps-dot">7</div><div class="ps-label">Flash board</div></div>
+    </div>
+
+    <!-- Prerequisites -->
+    <section class="section" id="prerequisites">
+      <div class="section-header">
+        <h2>Prerequisites</h2>
+      </div>
+      <p>Before starting, ensure you have the following available:</p>
+      <ul style="color:var(--text-secondary); padding-left:1.4rem; line-height:2;">
+        <li>A machine running <strong>Ubuntu 22.04 LTS</strong> (Ubuntu 24.04 works but may show warnings)</li>
+        <li>At least <strong>100 GB</strong> of free disk space for the full Yocto build</li>
+        <li>At least <strong>8 GB RAM</strong> (16 GB recommended for parallel builds)</li>
+        <li>Fast internet connection — the <code>repo sync</code> step fetches several GB</li>
+        <li>An <strong>STM32MP257F-EV1</strong> evaluation board with a USB cable</li>
+        <li>An STMicroelectronics account (required to download STM32CubeProgrammer)</li>
+      </ul>
+      <div class="callout info" style="margin-top:1.25rem;">
+        <span class="callout-icon">ℹ</span>
+        <p>All commands below assume you are running as a regular (non-root) user with <code>sudo</code> privileges. Do not run the Yocto build as root.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- 1 — Dependencies -->
+    <section class="section" id="dependencies">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <h2>Install build dependencies</h2>
+      </div>
+      <p>Update your package lists, then install all required host tools. These cover compilers, Python utilities, source-control helpers, and misc Yocto prerequisites.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="prompt">$ </span>sudo apt update
+<span class="prompt">$ </span>sudo apt-get install -y \
+    gawk wget git diffstat unzip texinfo \
+    gcc-multilib build-essential chrpath socat cpio \
+    python3 python3-pip python3-pexpect \
+    xz-utils debianutils iputils-ping \
+    python3-git python3-jinja2 \
+    libegl-dev libsdl1.2-dev pylint xterm \
+    lz4 zstd curl repo bsdmainutils git-lfs \
+    libegl1-mesa libgmp-dev libmpc-dev libssl-dev</code></pre>
+      </div>
+
+      <h3>What each group installs</h3>
+      <table class="pkg-table">
+        <thead><tr><th>Package(s)</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>gawk, diffstat, unzip, texinfo</td><td>Text processing tools required by Bitbake</td></tr>
+          <tr><td>gcc-multilib, build-essential</td><td>Host compiler toolchain</td></tr>
+          <tr><td>chrpath, socat, cpio</td><td>ELF rpath patching, socket relay, archive utilities</td></tr>
+          <tr><td>python3, python3-pip, python3-pexpect, python3-git, python3-jinja2</td><td>Python runtime and Bitbake Python dependencies</td></tr>
+          <tr><td>libegl-dev, libsdl1.2-dev</td><td>OpenGL/EGL and SDL development headers for Weston</td></tr>
+          <tr><td>lz4, zstd, xz-utils</td><td>Compression tools for image packaging</td></tr>
+          <tr><td>repo, git-lfs</td><td>Google Repo manifest tool; Git Large File Storage</td></tr>
+          <tr><td>libgmp-dev, libmpc-dev, libssl-dev</td><td>Math and crypto libraries used by the cross-compiler build</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr>
+
+    <!-- 2 — Workspace -->
+    <section class="section" id="workspace">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <h2>Create the workspace directory</h2>
+      </div>
+      <p>All build artefacts and source layers live inside a single directory. Create it in your home folder and change into it.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="prompt">$ </span>mkdir ~/stm32mp2-yocto && cd ~/stm32mp2-yocto</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <p>You can choose a different path — just replace <code>~/stm32mp2-yocto</code> consistently in every subsequent command.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- 3 — Repo sync -->
+    <section class="section" id="sync">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <h2>Initialise repo and sync sources</h2>
+      </div>
+      <p>The STMicroelectronics OE manifest repo groups all required Yocto meta-layers into one versioned reference. Initialise it at the correct tag, then sync.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Initialise the manifest at the v26.02.18 tag</span>
+<span class="prompt">$ </span>repo init \
+    -u https://github.com/STMicroelectronics/oe-manifest.git \
+    -b refs/tags/openstlinux-6.6-yocto-scarthgap-mpu-v26.02.18
+
+<span class="cmt"># Download all layer sources (may take 10–30 minutes)</span>
+<span class="prompt">$ </span>repo sync</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠</span>
+        <p><strong>Do not interrupt <code>repo sync</code>.</strong> Partial syncs can leave the tree in an inconsistent state. If it fails, re-run <code>repo sync</code> — it is safe to resume.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- 4 — Build -->
+    <section class="section" id="build">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <h2>Configure the build environment and build</h2>
+      </div>
+      <p>Source the ST environment setup script to initialise Bitbake with the correct machine and distro, then kick off the image build.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Source the environment (must be done in every new shell session)</span>
+<span class="prompt">$ </span><span class="kw">MACHINE</span>=stm32mp25-eval <span class="kw">DISTRO</span>=openstlinux-weston \
+    source layers/meta-st/scripts/envsetup.sh</code></pre>
+      </div>
+
+      <p style="margin-top:1rem;">This command changes your working directory to the build folder. Now choose which image to build:</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Minimal console image (faster, no Weston compositor)</span>
+<span class="prompt">$ </span>bitbake st-image-core
+
+<span class="cmt"># Full Weston Wayland GUI image</span>
+<span class="prompt">$ </span>bitbake st-image-weston</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <p>The first full build compiles a cross-compiler from scratch and can take <strong>3–8 hours</strong> depending on your CPU and disk speed. Subsequent builds are fast thanks to Bitbake's shared-state cache.</p>
+      </div>
+
+      <div class="callout success">
+        <span class="callout-icon">✓</span>
+        <p>Build output images are written to:<br>
+        <code>build-openstlinuxweston-stm32mp25-eval/tmp-glibc/deploy/images/stm32mp25-eval/</code></p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- Troubleshooting -->
+    <section class="section" id="troubleshooting">
+      <div class="section-header">
+        <h2>Build troubleshooting</h2>
+      </div>
+
+      <h3>Error: locale / UTF-8 issue</h3>
+      <p>Bitbake requires a UTF-8 locale. If you see locale-related errors, fix them with:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="prompt">$ </span>sudo locale-gen en_US.UTF-8
+<span class="prompt">$ </span>sudo update-locale LANG=en_US.UTF-8
+<span class="prompt">$ </span>export LANG=en_US.UTF-8
+<span class="prompt">$ </span>export LC_ALL=en_US.UTF-8</code></pre>
+      </div>
+      <p>Add the two <code>export</code> lines to your <code>~/.bashrc</code> to persist across sessions.</p>
+
+      <h3>Error: unprivileged user namespaces (Ubuntu 24.04)</h3>
+      <p>Ubuntu 24.04 ships with AppArmor restrictions that block the unprivileged user namespaces that Bitbake's pseudo uses. Disable the restriction:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Apply for the current session</span>
+<span class="prompt">$ </span>sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+<span class="cmt"># Persist across reboots</span>
+<span class="prompt">$ </span>echo 'kernel.apparmor_restrict_unprivileged_userns=0' | \
+    sudo tee /etc/sysctl.d/99-userns.conf</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠</span>
+        <p>This setting slightly reduces the kernel's AppArmor surface. It is acceptable on a dedicated build machine. Review your organisation's security policy before applying on shared systems.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- 5 — STM32CubeProgrammer -->
+    <section class="section" id="programmer">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <h2>Install STM32CubeProgrammer</h2>
+      </div>
+
+      <p>STM32CubeProgrammer is the official ST tool for writing firmware and partition images to STM32 devices over USB (DFU) or JTAG.</p>
+
+      <ol class="steps">
+        <li>
+          <div class="step-n">1</div>
+          <div class="step-body">
+            <strong>Download the installer</strong>
+            <p>Log in to <a href="https://www.st.com" style="color:var(--blue-600);">st.com</a>, search for <em>STM32CubeProgrammer</em>, and download the Linux 64-bit installer ZIP (e.g. <code>SetupSTM32CubeProgrammer_linux_64.zip</code>).</p>
+          </div>
+        </li>
+        <li>
+          <div class="step-n">2</div>
+          <div class="step-body">
+            <strong>Install runtime dependencies</strong>
+            <p>The installer requires Java and libusb.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="prompt">$ </span>sudo apt install libusb-1.0-0 openjdk-11-jre-headless unzip</code></pre>
+      </div>
+
+      <ol class="steps" style="margin-top:0.75rem;">
+        <li>
+          <div class="step-n">3</div>
+          <div class="step-body">
+            <strong>Extract and run the installer</strong>
+            <p>Unzip to a local directory, make the binary executable, and run it.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="prompt">$ </span>unzip SetupSTM32CubeProgrammer_linux_64.zip -d STM32CubeProgrammer-setup
+<span class="prompt">$ </span>cd STM32CubeProgrammer-setup
+<span class="prompt">$ </span>chmod +x SetupSTM32CubeProgrammer-2.22.0.linux
+<span class="prompt">$ </span>./SetupSTM32CubeProgrammer-2.22.0.linux</code></pre>
+      </div>
+
+      <p>Follow the GUI installer. It installs to <code>~/STMicroelectronics/STM32Cube/STM32CubeProgrammer/</code> by default.</p>
+
+      <ol class="steps" style="margin-top:0.75rem;">
+        <li>
+          <div class="step-n">4</div>
+          <div class="step-body">
+            <strong>Add the CLI tool to your PATH</strong>
+            <p>So you can call <code>STM32_Programmer_CLI</code> from any directory.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="prompt">$ </span>echo 'export PATH=$HOME/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin:$PATH' \
+    >> ~/.bashrc
+<span class="prompt">$ </span>source ~/.bashrc</code></pre>
+      </div>
+
+      <ol class="steps" style="margin-top:0.75rem;">
+        <li>
+          <div class="step-n">5</div>
+          <div class="step-body">
+            <strong>Verify the installation</strong>
+          </div>
+        </li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="prompt">$ </span>STM32_Programmer_CLI --version
+<span class="cmt"># Expected output: STM32CubeProgrammer v2.22.0  (or similar)</span></code></pre>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- 6 — udev -->
+    <section class="section" id="udev">
+      <div class="section-header">
+        <div class="section-num">6</div>
+        <h2>Configure USB and udev rules</h2>
+      </div>
+      <p>Without udev rules, accessing the STM32 device in DFU mode requires root. Install the bundled rules to allow your user to access it directly.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Copy the bundled udev rules</span>
+<span class="prompt">$ </span>cd ~/STMicroelectronics/STM32Cube/STM32CubeProgrammer/Drivers/rules
+<span class="prompt">$ </span>sudo cp *.rules /etc/udev/rules.d/
+
+<span class="cmt"># Reload udev so the rules take effect immediately</span>
+<span class="prompt">$ </span>sudo udevadm control --reload-rules
+<span class="prompt">$ </span>sudo udevadm trigger</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <p>You may need to <strong>unplug and re-plug</strong> the USB cable after reloading udev rules for the new permissions to apply to the already-connected device.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- 7 — Flash -->
+    <section class="section" id="flash">
+      <div class="section-header">
+        <div class="section-num">7</div>
+        <h2>Flash the board</h2>
+      </div>
+      <p>Before flashing, copy the TSV flash layout file into the images directory so the programmer can resolve relative paths to all partition binaries.</p>
+
+      <h3>Copy the flash layout file</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="kw">BUILD</span>=~/stm32mp2-yocto/build-openstlinuxweston-stm32mp25-eval
+<span class="kw">DEPLOY</span>=$BUILD/tmp-glibc/deploy/images/stm32mp25-eval
+
+cp $DEPLOY/flashlayout_st-image-core/optee/\
+FlashLayout_emmc_stm32mp257f-ev1-optee.tsv \
+$DEPLOY/</code></pre>
+      </div>
+
+      <h3>Boot the board into DFU mode</h3>
+      <p>Set the boot switches on the STM32MP257F-EV1 to <strong>USB DFU mode</strong> (consult the board schematics or ST's hardware reference), then connect it to your host PC via the USB-C cable.</p>
+
+      <h3>Run the programmer</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>STM32_Programmer_CLI \
+  -c port=usb1 \
+  -w $DEPLOY/FlashLayout_emmc_stm32mp257f-ev1-optee.tsv \
+  -binpath $DEPLOY</code></pre>
+      </div>
+
+      <div class="callout success">
+        <span class="callout-icon">✓</span>
+        <p>Flashing typically takes 3–8 minutes. When complete, reset the boot switches to eMMC boot mode and power-cycle the board. Linux should boot within 30 seconds.</p>
+      </div>
+
+      <div class="callout warning">
+        <span class="callout-icon">⚠</span>
+        <p>Replace <code>port=usb1</code> with <code>port=usb0</code> if the programmer reports it cannot find the device. Use <code>STM32_Programmer_CLI -l usb</code> to list detected DFU devices.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- Packages -->
+    <section class="section" id="packages">
+      <div class="section-header">
+        <h2>Adding, removing, and inspecting packages</h2>
+      </div>
+      <p>The Yocto image content is controlled through Bitbake variables, not a package manager like <code>apt</code>. Changes are made before the build, and the image is rebuilt.</p>
+
+      <h3>Inspect what's in the current image</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Full package manifest of the built image</span>
+<span class="prompt">$ </span>cat $DEPLOY/st-image-core-stm32mp25-eval.manifest
+
+<span class="cmt"># Check what IMAGE_INSTALL currently resolves to</span>
+<span class="prompt">$ </span>bitbake -e st-image-core | grep ^IMAGE_INSTALL</code></pre>
+      </div>
+
+      <h3>Add packages via local.conf</h3>
+      <p>The quickest way to add packages is to append to <code>IMAGE_INSTALL</code> in your build's <code>local.conf</code>:</p>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash — local.conf</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Note the leading space inside the quotes</span>
+<span class="kw">IMAGE_INSTALL</span>:append = <span class="str">" htop nano python3-numpy openssh"</span></code></pre>
+      </div>
+
+      <h3>Remove packages</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash — local.conf</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Remove a package even if pulled in as a dependency</span>
+<span class="kw">IMAGE_INSTALL</span>:remove = <span class="str">" packagename"</span>
+<span class="kw">PACKAGE_EXCLUDE</span> = <span class="str">"packagename"</span></code></pre>
+      </div>
+
+      <h3>Search for available recipe names</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang">bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="cmt"># Search all available recipes by keyword</span>
+<span class="prompt">$ </span>bitbake-layers show-recipes 2>/dev/null | grep -i &lt;keyword&gt;
+
+<span class="cmt"># Find recipe .bb files by keyword</span>
+<span class="prompt">$ </span>find layers/ -name "*.bb" | xargs grep -l "SUMMARY.*&lt;keyword&gt;" 2>/dev/null</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <p>After editing <code>local.conf</code>, re-source the environment and run <code>bitbake st-image-core</code> again. Bitbake will only rebuild what changed — subsequent builds are fast.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  const lines = pre.querySelectorAll('code');
+  let text = '';
+  lines.forEach(c => {
+    let t = c.innerText;
+    t = t.replace(/^\$ /gm, '');
+    text += t;
+  });
+  navigator.clipboard.writeText(text.trim()).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+const sections = document.querySelectorAll('.section, .hero');
+const links = document.querySelectorAll('.sidebar nav a');
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      links.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+      });
+    }
+  });
+}, { threshold: 0.25 });
+
+sections.forEach(s => { if (s.id) observer.observe(s); });
+</script>
+</body>
+</html>
